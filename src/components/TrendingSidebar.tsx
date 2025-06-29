@@ -37,6 +37,34 @@ const TrendingSidebar: React.FC = () => {
   const mostRead = trendingNews.slice(4, 9);
   const liveUpdates = internationalNews.slice(0, 4);
 
+  // Fallback image function
+  const getFallbackImage = (category: string): string => {
+    const fallbackImages: Record<string, string> = {
+      'INTERNACIONAL': 'https://images.pexels.com/photos/3769021/pexels-photo-3769021.jpeg?auto=compress&cs=tinysrgb&w=400',
+      'POLÍTICA': 'https://images.pexels.com/photos/3183150/pexels-photo-3183150.jpeg?auto=compress&cs=tinysrgb&w=400',
+      'ECONOMIA': 'https://images.pexels.com/photos/3760067/pexels-photo-3760067.jpeg?auto=compress&cs=tinysrgb&w=400',
+      'TECNOLOGIA': 'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=400',
+      'SAÚDE': 'https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400',
+      'ESPORTES': 'https://images.pexels.com/photos/3621104/pexels-photo-3621104.jpeg?auto=compress&cs=tinysrgb&w=400',
+      'MEIO AMBIENTE': 'https://images.pexels.com/photos/3621160/pexels-photo-3621160.jpeg?auto=compress&cs=tinysrgb&w=400',
+      'CIÊNCIA': 'https://images.pexels.com/photos/3825581/pexels-photo-3825581.jpeg?auto=compress&cs=tinysrgb&w=400',
+      'CULTURA': 'https://images.pexels.com/photos/3944091/pexels-photo-3944091.jpeg?auto=compress&cs=tinysrgb&w=400',
+      'GERAL': 'https://images.pexels.com/photos/6193518/pexels-photo-6193518.jpeg?auto=compress&cs=tinysrgb&w=400'
+    };
+    
+    return fallbackImages[category.toUpperCase()] || fallbackImages['GERAL'];
+  };
+
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>, category: string) => {
+    const target = e.target as HTMLImageElement;
+    const fallback = getFallbackImage(category);
+    
+    // Prevent infinite loop if fallback also fails
+    if (target.src !== fallback) {
+      target.src = fallback;
+    }
+  };
+
   return (
     <aside className="space-y-8 sidebar-container">
       {/* Trending News */}
@@ -71,26 +99,37 @@ const TrendingSidebar: React.FC = () => {
                   to={linkTo}
                   className="group cursor-pointer pb-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0 block"
                 >
-                  <h4 className="font-semibold text-gray-900 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors mb-2 leading-snug">
-                    {news.title}
-                  </h4>
-                  <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-500">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      news.title.includes('Magalu') 
-                        ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' 
-                        : 'bg-gray-100 dark:bg-gray-700'
-                    }`}>
-                      {news.title.includes('Magalu') ? 'PROMOÇÃO' : news.category}
-                    </span>
-                    <div className="flex items-center space-x-3">
-                      <span className="flex items-center">
-                        <Eye size={12} className="mr-1" />
-                        {news.views || 0}
-                      </span>
-                      <span className="flex items-center">
-                        <Clock size={12} className="mr-1" />
-                        {news.timestamp}
-                      </span>
+                  <div className="flex items-start space-x-3">
+                    <img
+                      src={news.imageUrl}
+                      alt={news.title}
+                      className="w-16 h-12 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => handleImageError(e, news.category)}
+                      loading="lazy"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-gray-900 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors mb-2 leading-snug text-sm line-clamp-2">
+                        {news.title}
+                      </h4>
+                      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-500">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          news.title.includes('Magalu') 
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' 
+                            : 'bg-gray-100 dark:bg-gray-700'
+                        }`}>
+                          {news.title.includes('Magalu') ? 'PROMOÇÃO' : news.category}
+                        </span>
+                        <div className="flex items-center space-x-2">
+                          <span className="flex items-center">
+                            <Eye size={10} className="mr-1" />
+                            {news.views || 0}
+                          </span>
+                          <span className="flex items-center">
+                            <Clock size={10} className="mr-1" />
+                            {news.timestamp}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </Link>
@@ -128,7 +167,7 @@ const TrendingSidebar: React.FC = () => {
                 <div className="flex-1">
                   <Link
                     to={linkTo}
-                    className="text-gray-700 dark:text-gray-300 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors font-medium leading-snug block"
+                    className="text-gray-700 dark:text-gray-300 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors font-medium leading-snug block text-sm line-clamp-2"
                   >
                     {article.title}
                   </Link>
@@ -169,7 +208,7 @@ const TrendingSidebar: React.FC = () => {
                   <span className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded mr-3 flex-shrink-0">
                     {update.timestamp.split(' ')[1] || 'AGORA'}
                   </span>
-                  <p className="text-sm text-red-800 dark:text-red-200 leading-relaxed">
+                  <p className="text-sm text-red-800 dark:text-red-200 leading-relaxed line-clamp-2">
                     {update.title}
                   </p>
                 </Link>

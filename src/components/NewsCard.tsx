@@ -47,6 +47,34 @@ const NewsCard: React.FC<NewsCardProps> = ({
   // Check if this is the Magalu promo
   const isMagaluPromo = title.includes('Magalu') && title.includes('Projetor Samsung');
 
+  // Fallback images for different categories
+  const getFallbackImage = (category: string): string => {
+    const fallbackImages: Record<string, string> = {
+      'INTERNACIONAL': 'https://images.pexels.com/photos/3769021/pexels-photo-3769021.jpeg?auto=compress&cs=tinysrgb&w=800',
+      'POLÍTICA': 'https://images.pexels.com/photos/3183150/pexels-photo-3183150.jpeg?auto=compress&cs=tinysrgb&w=800',
+      'ECONOMIA': 'https://images.pexels.com/photos/3760067/pexels-photo-3760067.jpeg?auto=compress&cs=tinysrgb&w=800',
+      'TECNOLOGIA': 'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800',
+      'SAÚDE': 'https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=800',
+      'ESPORTES': 'https://images.pexels.com/photos/3621104/pexels-photo-3621104.jpeg?auto=compress&cs=tinysrgb&w=800',
+      'MEIO AMBIENTE': 'https://images.pexels.com/photos/3621160/pexels-photo-3621160.jpeg?auto=compress&cs=tinysrgb&w=800',
+      'CIÊNCIA': 'https://images.pexels.com/photos/3825581/pexels-photo-3825581.jpeg?auto=compress&cs=tinysrgb&w=800',
+      'CULTURA': 'https://images.pexels.com/photos/3944091/pexels-photo-3944091.jpeg?auto=compress&cs=tinysrgb&w=800',
+      'GERAL': 'https://images.pexels.com/photos/6193518/pexels-photo-6193518.jpeg?auto=compress&cs=tinysrgb&w=800'
+    };
+    
+    return fallbackImages[category.toUpperCase()] || fallbackImages['GERAL'];
+  };
+
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const target = e.target as HTMLImageElement;
+    const fallback = getFallbackImage(category);
+    
+    // Prevent infinite loop if fallback also fails
+    if (target.src !== fallback) {
+      target.src = fallback;
+    }
+  };
+
   return (
     <Link to={url?.startsWith('/promo/') ? url : `/blog/${id}`} className="block group">
       <article className={`cursor-pointer ${isMain ? 'mb-8' : 'mb-6'}`}>
@@ -57,10 +85,8 @@ const NewsCard: React.FC<NewsCardProps> = ({
               src={imageUrl} 
               alt={title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = 'https://images.pexels.com/photos/6193518/pexels-photo-6193518.jpeg?auto=compress&cs=tinysrgb&w=800';
-              }}
+              onError={handleImageError}
+              loading="lazy"
             />
             <div className="absolute top-4 left-4">
               <span className={`px-3 py-1 text-sm font-semibold rounded ${
