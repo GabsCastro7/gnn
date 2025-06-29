@@ -5,6 +5,7 @@ import anime from 'animejs';
 import NewsCard from '../components/NewsCard';
 import BreakingNews from '../components/BreakingNews';
 import TrendingSidebar from '../components/TrendingSidebar';
+import RealTimeWidget from '../components/RealTimeWidget';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 
@@ -156,6 +157,11 @@ const Home: React.FC = () => {
               </div>
             )}
 
+            {/* Real-Time Financial Widget */}
+            <div className="news-card mb-12">
+              <RealTimeWidget />
+            </div>
+
             {/* Twitter Embed Section */}
             <div className="news-card mb-12">
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 p-6">
@@ -297,7 +303,7 @@ const Home: React.FC = () => {
       <div className="fixed bottom-4 right-4 z-50">
         <div className="bg-green-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center">
           <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
-          <span className="text-sm font-medium">Notícias em Tempo Real</span>
+          <span className="text-sm font-medium">Dados em Tempo Real</span>
         </div>
       </div>
     </div>

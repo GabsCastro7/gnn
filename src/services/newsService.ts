@@ -36,16 +36,16 @@ class NewsService {
   private readonly API_KEY = '5abc995c804756f55fc0a6752e402aa3';
   private readonly BASE_URL = 'https://gnews.io/api/v4';
   private cache = new Map<string, { data: any; timestamp: number }>();
-  private readonly CACHE_DURATION = 30 * 60 * 1000; // 30 minutos para mais atualizações
+  private readonly CACHE_DURATION = 15 * 60 * 1000; // 15 minutos para mais atualizações
   private lastRequestTime = 0;
-  private readonly MIN_REQUEST_INTERVAL = 2000; // 2 segundos entre requests
+  private readonly MIN_REQUEST_INTERVAL = 1500; // 1.5 segundos entre requests
   private requestQueue: Array<() => Promise<any>> = [];
   private isProcessingQueue = false;
   private fallbackCounter = 0;
   private usedTitles = new Set<string>(); // Para evitar duplicatas
   private newsIdCounter = 1000; // Contador único para IDs
 
-  // Pool de imagens variadas para fallback
+  // Pool expandido de imagens variadas para fallback
   private imagePool = [
     'https://images.pexels.com/photos/6193518/pexels-photo-6193518.jpeg?auto=compress&cs=tinysrgb&w=800',
     'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=800',
@@ -62,7 +62,11 @@ class NewsService {
     'https://images.pexels.com/photos/3184295/pexels-photo-3184295.jpeg?auto=compress&cs=tinysrgb&w=800',
     'https://images.pexels.com/photos/3184296/pexels-photo-3184296.jpeg?auto=compress&cs=tinysrgb&w=800',
     'https://images.pexels.com/photos/3184297/pexels-photo-3184297.jpeg?auto=compress&cs=tinysrgb&w=800',
-    'https://images.pexels.com/photos/3184298/pexels-photo-3184298.jpeg?auto=compress&cs=tinysrgb&w=800'
+    'https://images.pexels.com/photos/3184298/pexels-photo-3184298.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/6801642/pexels-photo-6801642.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/6801644/pexels-photo-6801644.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/6801646/pexels-photo-6801646.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/6801650/pexels-photo-6801650.jpeg?auto=compress&cs=tinysrgb&w=800'
   ];
 
   private getCacheKey(endpoint: string, params: Record<string, any>): string {
@@ -188,7 +192,7 @@ class NewsService {
 
   private async fetchInBackground(endpoint: string, params: Record<string, any>, cacheKey: string): Promise<void> {
     const cached = this.cache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < 10 * 60 * 1000) { // 10 minutos
+    if (cached && Date.now() - cached.timestamp < 5 * 60 * 1000) { // 5 minutos
       return;
     }
 
@@ -222,14 +226,20 @@ class NewsService {
     const query = params.q || '';
     
     const currentTime = new Date();
-    const timeOffset = this.fallbackCounter * 45000; // 45 segundos offset
+    const timeOffset = this.fallbackCounter * 30000; // 30 segundos offset
     
     const newsTemplates = [
-      // Internacional
+      // Internacional - Mais variado
       {
-        title: "Cúpula internacional define novos acordos de cooperação global",
-        description: "Líderes mundiais estabelecem diretrizes para enfrentar desafios globais emergentes.",
+        title: "Cúpula do G20 define novos acordos de cooperação econômica global",
+        description: "Líderes mundiais estabelecem diretrizes para enfrentar desafios econômicos emergentes.",
         content: "Em sessão extraordinária, representantes de mais de 50 países discutem estratégias coordenadas para questões de segurança, economia e meio ambiente.",
+        category: "INTERNACIONAL"
+      },
+      {
+        title: "União Europeia anuncia pacote de investimentos em energia renovável",
+        description: "Bloco europeu destina bilhões para transição energética e redução de emissões.",
+        content: "O novo pacote de investimentos visa acelerar a transição para fontes de energia limpa em toda a Europa.",
         category: "INTERNACIONAL"
       },
       {
@@ -239,15 +249,33 @@ class NewsService {
         category: "INTERNACIONAL"
       },
       {
-        title: "Acordo comercial histórico é assinado entre blocos econômicos",
+        title: "China anuncia nova política de abertura comercial para mercados emergentes",
+        description: "Governo chinês estabelece novas diretrizes para facilitar comércio com países em desenvolvimento.",
+        content: "As novas medidas visam fortalecer parcerias comerciais e reduzir barreiras para importações e exportações.",
+        category: "INTERNACIONAL"
+      },
+      {
+        title: "Acordo histórico é assinado entre blocos econômicos do Pacífico",
         description: "Nova parceria promete revolucionar o comércio internacional e fortalecer economias regionais.",
         content: "O acordo abrange múltiplos setores e estabelece novas diretrizes para cooperação econômica entre as nações participantes.",
         category: "ECONOMIA"
       },
       {
-        title: "Mercados globais reagem a novos indicadores econômicos",
-        description: "Bolsas de valores registram movimentação significativa após divulgação de dados macroeconômicos.",
-        content: "Analistas avaliam impacto dos novos números na economia mundial e perspectivas para os próximos trimestres.",
+        title: "Mercados globais reagem positivamente a novos indicadores econômicos",
+        description: "Bolsas de valores registram alta após divulgação de dados macroeconômicos favoráveis.",
+        content: "Analistas avaliam impacto dos novos números na economia mundial e perspectivas otimistas para os próximos trimestres.",
+        category: "ECONOMIA"
+      },
+      {
+        title: "Banco Central brasileiro mantém taxa de juros em reunião do Copom",
+        description: "Decisão reflete cenário de estabilidade inflacionária e crescimento econômico moderado.",
+        content: "A manutenção da taxa Selic em 10,75% ao ano foi unânime entre os membros do comitê.",
+        category: "ECONOMIA"
+      },
+      {
+        title: "Petrobras anuncia descoberta de novo campo de petróleo no pré-sal",
+        description: "Nova descoberta pode aumentar significativamente as reservas brasileiras de petróleo.",
+        content: "O campo localizado na Bacia de Santos tem potencial para produção de milhões de barris por dia.",
         category: "ECONOMIA"
       },
       {
@@ -257,9 +285,21 @@ class NewsService {
         category: "TECNOLOGIA"
       },
       {
-        title: "Computação quântica atinge novo marco histórico",
-        description: "Pesquisadores anunciam breakthrough que pode transformar a computação moderna.",
+        title: "Computação quântica atinge novo marco histórico em pesquisa brasileira",
+        description: "Pesquisadores da USP anunciam breakthrough que pode transformar a computação moderna.",
         content: "Avanço representa salto significativo na capacidade de processamento de informações complexas.",
+        category: "TECNOLOGIA"
+      },
+      {
+        title: "Startup brasileira desenvolve solução inovadora para energia solar",
+        description: "Nova tecnologia promete reduzir custos de instalação de painéis solares em 40%.",
+        content: "A inovação pode acelerar a adoção de energia solar residencial no Brasil.",
+        category: "TECNOLOGIA"
+      },
+      {
+        title: "5G chega a mais 50 cidades brasileiras neste mês",
+        description: "Expansão da rede 5G acelera digitalização e conectividade no interior do país.",
+        content: "A nova cobertura beneficiará mais de 10 milhões de brasileiros com internet de alta velocidade.",
         category: "TECNOLOGIA"
       },
       {
@@ -269,21 +309,45 @@ class NewsService {
         category: "MEIO AMBIENTE"
       },
       {
-        title: "Descoberta arqueológica reescreve história antiga",
-        description: "Achados revelam nova perspectiva sobre civilizações perdidas e desenvolvimento humano.",
+        title: "Amazônia registra menor índice de desmatamento em 15 anos",
+        description: "Dados do INPE mostram redução significativa na destruição da floresta amazônica.",
+        content: "Políticas de preservação e fiscalização intensificada contribuem para resultado positivo.",
+        category: "MEIO AMBIENTE"
+      },
+      {
+        title: "Descoberta arqueológica reescreve história do Brasil colonial",
+        description: "Achados em Minas Gerais revelam nova perspectiva sobre período colonial brasileiro.",
         content: "Escavações trazem à luz evidências que desafiam teorias estabelecidas sobre o passado.",
         category: "CIÊNCIA"
       },
       {
-        title: "Campeonato mundial de futebol bate recordes de audiência",
-        description: "Competição internacional atrai milhões de espectadores ao redor do mundo.",
-        content: "Evento esportivo registra números históricos de engajamento digital e presencial.",
+        title: "Cientistas brasileiros desenvolvem vacina contra dengue mais eficaz",
+        description: "Nova vacina mostra 95% de eficácia em testes clínicos avançados.",
+        content: "Pesquisa conduzida pelo Instituto Butantan pode revolucionar prevenção da dengue no país.",
+        category: "SAÚDE"
+      },
+      {
+        title: "Copa do Mundo de 2026 terá jogos em 12 cidades brasileiras",
+        description: "FIFA confirma sedes brasileiras para o mundial que será realizado em três países.",
+        content: "Brasil, Estados Unidos e México sediarão conjuntamente a Copa do Mundo de 2026.",
         category: "ESPORTES"
       },
       {
-        title: "Festival internacional de cinema celebra diversidade cultural",
-        description: "Evento reúne produções de mais de 80 países em celebração da arte cinematográfica.",
-        content: "Festival destaca obras que abordam temas contemporâneos e promovem diálogo intercultural.",
+        title: "Seleção brasileira convoca novos talentos para eliminatórias",
+        description: "Técnico Dorival Júnior aposta em jovens promessas para próximos jogos.",
+        content: "Lista inclui revelações do futebol brasileiro que se destacaram na temporada.",
+        category: "ESPORTES"
+      },
+      {
+        title: "Festival de Cannes 2025 terá recorde de filmes brasileiros",
+        description: "Cinema nacional ganha destaque internacional com 8 produções selecionadas.",
+        content: "Filmes brasileiros concorrem em diferentes categorias do prestigioso festival francês.",
+        category: "CULTURA"
+      },
+      {
+        title: "Museu Nacional reabre com nova exposição sobre biodiversidade brasileira",
+        description: "Após reconstrução, museu apresenta acervo renovado sobre fauna e flora nacionais.",
+        content: "Exposição interativa utiliza tecnologia de realidade virtual para experiência imersiva.",
         category: "CULTURA"
       }
     ];
@@ -302,7 +366,7 @@ class NewsService {
     const shuffledTemplates = newsTemplates
       .sort(() => Math.random() - 0.5)
       .filter(template => !this.usedTitles.has(template.title.toLowerCase()))
-      .slice(0, 25);
+      .slice(0, 30);
 
     const articles: GNewsArticle[] = shuffledTemplates.map((template, index) => {
       this.usedTitles.add(template.title.toLowerCase());
@@ -313,7 +377,7 @@ class NewsService {
         content: template.content,
         url: "#",
         image: this.getRandomImage(),
-        publishedAt: new Date(currentTime.getTime() - timeOffset - (index * 120000)).toISOString(), // 2 minutos entre cada
+        publishedAt: new Date(currentTime.getTime() - timeOffset - (index * 90000)).toISOString(), // 1.5 minutos entre cada
         source: {
           name: this.getRandomSource(),
           url: "https://gnn.com.br"
@@ -330,18 +394,24 @@ class NewsService {
   private getRandomSource(): string {
     const sources = [
       "Reuters Internacional",
-      "BBC News",
+      "BBC News Brasil",
       "Associated Press",
-      "CNN Internacional",
+      "CNN Brasil",
       "Financial Times",
-      "Bloomberg",
+      "Bloomberg Brasil",
       "Wall Street Journal",
       "The Guardian",
       "Le Monde",
-      "Deutsche Welle",
+      "Deutsche Welle Brasil",
       "Al Jazeera",
       "France 24",
-      "Euronews",
+      "Euronews Brasil",
+      "Agência Brasil",
+      "Folha de S.Paulo",
+      "O Globo",
+      "Estado de S.Paulo",
+      "UOL Notícias",
+      "G1 Globo",
       "Global News Network"
     ];
     return sources[Math.floor(Math.random() * sources.length)];
