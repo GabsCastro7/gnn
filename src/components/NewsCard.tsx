@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, Eye, ExternalLink } from 'lucide-react';
+import { Clock, Eye, ExternalLink, ShoppingCart } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface NewsCardProps {
@@ -35,21 +35,20 @@ const NewsCard: React.FC<NewsCardProps> = ({
   const handleExternalLink = (e: React.MouseEvent) => {
     e.preventDefault();
     if (url && url !== '#') {
-      window.open(url, '_blank', 'noopener,noreferrer');
+      if (url.startsWith('/promo/')) {
+        // Navigate to internal promo page
+        window.location.href = url;
+      } else {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
     }
   };
 
-  const handleMagaluPromo = () => {
-    // Implementation for Magalu promotion tracking
-    console.log('Magalu promotion button clicked');
-    // Add conversion tracking logic here
-    // Example: sendEventToAnalytics('magalu_promo_click');
-    // Redirect to Magalu's website
-    window.open('https://www.magalu.com.br', '_blank', 'noopener,noreferrer');
-  };
+  // Check if this is the Magalu promo
+  const isMagaluPromo = title.includes('Magalu') && title.includes('Projetor Samsung');
 
   return (
-    <Link to={`/blog/${id}`} className="block group">
+    <Link to={url?.startsWith('/promo/') ? url : `/blog/${id}`} className="block group">
       <article className={`cursor-pointer ${isMain ? 'mb-8' : 'mb-6'}`}>
         <div className="flex flex-col space-y-3">
           {/* Image */}
@@ -64,13 +63,27 @@ const NewsCard: React.FC<NewsCardProps> = ({
               }}
             />
             <div className="absolute top-4 left-4">
-              <span className="bg-red-600 dark:bg-red-700 text-white px-3 py-1 text-sm font-semibold rounded">
-                {category}
+              <span className={`px-3 py-1 text-sm font-semibold rounded ${
+                isMagaluPromo 
+                  ? 'bg-green-600 text-white' 
+                  : 'bg-red-600 dark:bg-red-700 text-white'
+              }`}>
+                {isMagaluPromo ? 'PROMOÇÃO' : category}
               </span>
             </div>
             
+            {/* Special badge for Magalu promo */}
+            {isMagaluPromo && (
+              <div className="absolute top-4 right-4">
+                <span className="bg-yellow-400 text-yellow-900 px-2 py-1 text-xs font-bold rounded-full flex items-center">
+                  <ShoppingCart size={12} className="mr-1" />
+                  50% OFF
+                </span>
+              </div>
+            )}
+            
             {/* External Link Button */}
-            {url && url !== '#' && (
+            {url && url !== '#' && !url.startsWith('/promo/') && (
               <button
                 onClick={handleExternalLink}
                 className="absolute top-4 right-4 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
@@ -91,7 +104,10 @@ const NewsCard: React.FC<NewsCardProps> = ({
               {title}
             </h2>
             
-<p className={`text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-3 ${isMain ? 'text-lg' : 'text-base'} text-red-600 dark:text-red-700`} dangerouslySetInnerHTML={{ __html: content || summary }} />
+            <p className={`text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-3 ${
+              isMain ? 'text-lg' : 'text-base'
+            }`} 
+            dangerouslySetInnerHTML={{ __html: content || summary }} />
             
             <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-500">
               <div className="flex items-center space-x-4">
@@ -104,6 +120,11 @@ const NewsCard: React.FC<NewsCardProps> = ({
                   <span>{views || Math.floor(Math.random() * 1000) + 100} {t('common.views')}</span>
                 </div>
               </div>
+              {isMagaluPromo && (
+                <span className="text-green-600 font-semibold text-xs">
+                  OFERTA LIMITADA →
+                </span>
+              )}
             </div>
           </div>
         </div>

@@ -5,9 +5,6 @@ import anime from 'animejs';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import PaywallTrigger from '../components/PaywallTrigger';
-import AdBanner from '../components/monetization/AdBanner';
-import NativeAd from '../components/monetization/NativeAd';
-import MonetizationManager from '../components/monetization/MonetizationManager';
 import { useNews } from '../hooks/useNews';
 import { usePaywall } from '../contexts/PaywallContext';
 
@@ -19,7 +16,6 @@ const BlogPost: React.FC = () => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
-  const [showPaywallContent, setShowPaywallContent] = useState(false);
 
   const post = news.find(item => item.id === postId) || news[0];
   const relatedPosts = news.filter(item => item.id !== postId && item.category === post?.category).slice(0, 3);
@@ -56,7 +52,6 @@ const BlogPost: React.FC = () => {
     // Trigger paywall for non-subscribers after 5 seconds
     if (!isSubscribed) {
       const timer = setTimeout(() => {
-        setShowPaywallContent(true);
         setShowPaywall(true);
       }, 5000);
 
@@ -180,13 +175,6 @@ const BlogPost: React.FC = () => {
         </div>
       </div>
 
-      {/* Top Ad Banner */}
-      <div className="bg-gray-100 dark:bg-gray-800 py-4">
-        <div className="max-w-4xl mx-auto px-4 flex justify-center">
-          <AdBanner size="728x90" position="content" className="mx-auto" />
-        </div>
-      </div>
-
       {/* Article Header */}
       <article className="max-w-4xl mx-auto px-4 py-8">
         <header className="post-header mb-8">
@@ -287,11 +275,6 @@ const BlogPost: React.FC = () => {
           />
         </div>
 
-        {/* Content Ad */}
-        <div className="mb-8">
-          <AdBanner size="728x90" position="content" className="mx-auto" />
-        </div>
-
         {/* Article Content */}
         <div className="post-content relative">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8">
@@ -333,13 +316,6 @@ const BlogPost: React.FC = () => {
             )}
           </div>
         </div>
-
-        {/* Native Ad */}
-        {isSubscribed && (
-          <div className="my-8">
-            <NativeAd style="article" />
-          </div>
-        )}
 
         {/* Tags - Only show for subscribers */}
         {isSubscribed && (
@@ -402,11 +378,6 @@ const BlogPost: React.FC = () => {
           </section>
         )}
 
-        {/* Bottom Ad */}
-        <div className="mt-12">
-          <AdBanner size="728x90" position="content" className="mx-auto" />
-        </div>
-
         {/* Subscription CTA for non-subscribers */}
         {!isSubscribed && (
           <div className="mt-12 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl p-8 text-center">
@@ -425,9 +396,6 @@ const BlogPost: React.FC = () => {
           </div>
         )}
       </article>
-
-      {/* Monetization Manager */}
-      <MonetizationManager page="article" category={post.category} articleId={post.id} />
     </div>
   );
 };

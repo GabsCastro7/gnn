@@ -16,8 +16,6 @@ export interface GNewsResponse {
   articles: GNewsArticle[];
 }
 
-
-
 export interface NewsItem {
   id: number;
   title: string;
@@ -404,23 +402,25 @@ class NewsService {
       const apiItems = response.articles.map((article, index) => 
         this.convertToNewsItem(article, index, 'GERAL')
       );
-      // prepend manual promo items so they always appear
-      const manualItems: NewsItem[] = [{
-        id: Date.now() + 99999,
+      
+      // Adicionar notícia promocional da Magalu sempre no topo
+      const magaluPromo: NewsItem = {
+        id: 999999,
         title: "Magalu Lança Queima de Estoque: Projetor Samsung com 50% de Desconto",
-        summary: "Magalu oferece promoção relâmpago com descontos imperdíveis em projetores Samsung, pagamento via PIX.",
-        imageUrl: "https://images.pexels.com/photos/730547/pexels-photo-730547.jpeg?auto=compress&cs=tinysrgb&w=800",
+        summary: "Magalu oferece promoção relâmpago com descontos imperdíveis em projetores Samsung. Pagamento via PIX com entrega rápida e frete grátis para todo o Brasil.",
+        imageUrl: "https://images.samsung.com/is/image/samsung/p6pim/br/sp-lsbp3buxzd/gallery/br-the-freestyle-sp-lsbp3buxzd-530892018?$650_519_PNG$",
         category: "TECNOLOGIA",
         timestamp: "agora mesmo",
         author: "Magalu News",
-        views: 1500,
+        views: 2847,
         status: 'published',
-        url: '/artigo/magalu-projetor-samsung',
-        source: 'Magalu',
-        content: "A Magalu acaba de lançar uma promoção especial: projetores Samsung com 50% de desconto em queima de estoque. Pagamento via PIX no link de compra.",
+        url: '/promo/magalu-projetor-samsung',
+        source: 'Magazine Luiza',
+        content: "A Magazine Luiza acaba de lançar uma promoção especial: projetores Samsung The Freestyle com 50% de desconto em queima de estoque. O produto, que normalmente custa R$ 3.999,00, está sendo vendido por apenas R$ 1.999,00. A oferta inclui frete grátis para todo o Brasil e pagamento facilitado via PIX. Esta é uma oportunidade única para adquirir um dos projetores mais avançados do mercado com um desconto excepcional.",
         isMain: false
-      }];
-      return [...manualItems, ...apiItems];
+      };
+      
+      return [magaluPromo, ...apiItems];
     } catch (error) {
       console.error('Error fetching all news:', error);
       return this.getFallbackNewsItems('GERAL');

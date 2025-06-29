@@ -19,7 +19,7 @@ const Contact = lazy(() => import('./pages/Contact'));
 const Category = lazy(() => import('./pages/Category'));
 const Search = lazy(() => import('./pages/Search'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
-const ProductArticlePage = lazy(() => import('./pages/ProductArticlePage'));
+const MagaluPromoPage = lazy(() => import('./pages/MagaluPromoPage'));
 
 const LoadingFallback = () => (
   <div className="flex justify-center items-center h-screen">
@@ -58,7 +58,7 @@ function App() {
                     <Route path="/contact" element={<Contact />} />
                     <Route path="/category/:category" element={<Category />} />
                     <Route path="/search" element={<Search />} />
-                    <Route path="/artigo/magalu-projetor-samsung" element={<ProductArticlePage />} />
+                    <Route path="/promo/magalu-projetor-samsung" element={<MagaluPromoPage />} />
                   </Route>
                 </Routes>
               </Suspense>
