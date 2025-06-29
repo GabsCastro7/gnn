@@ -477,7 +477,7 @@ class NewsService {
         this.convertToNewsItem(article, index, 'GERAL')
       );
       
-      // Adicionar notícia promocional da Magalu sempre no topo
+      // Adicionar notícia promocional da Magalu sempre no topo com imagem correta
       const magaluPromo: NewsItem = {
         id: 999999,
         title: "Magalu Lança Queima de Estoque: Projetor Samsung com 50% de Desconto",
@@ -485,7 +485,7 @@ class NewsService {
         imageUrl: "https://images.samsung.com/is/image/samsung/p6pim/br/sp-lsbp3buxzd/gallery/br-the-freestyle-sp-lsbp3buxzd-530892018?$650_519_PNG$",
         category: "TECNOLOGIA",
         timestamp: "agora mesmo",
-        author: "Magalu News",
+        author: "Magazine Luiza",
         views: 2847,
         status: 'published',
         url: '/promo/magalu-projetor-samsung',

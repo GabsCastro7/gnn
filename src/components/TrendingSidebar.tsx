@@ -5,9 +5,6 @@ import anime from 'animejs';
 import { useNews, useInternationalNews } from '../hooks/useNews';
 import LoadingSpinner from './LoadingSpinner';
 
-
-
-
 const TrendingSidebar: React.FC = () => {
   const { news: trendingNews, loading: trendingLoading, refresh: refreshTrending } = useNews({ autoRefresh: true });
   const { news: internationalNews, loading: intLoading } = useInternationalNews();
@@ -62,32 +59,43 @@ const TrendingSidebar: React.FC = () => {
           <LoadingSpinner size="sm" text="Carregando..." />
         ) : (
           <div className="space-y-4">
-            {topTrending.map((news, index) => (
-              <Link
-                key={news.id}
-                to={`/blog/${news.id}`}
-                className="group cursor-pointer pb-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0 block"
-              >
-                <h4 className="font-semibold text-gray-900 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors mb-2 leading-snug">
-                  {news.title}
-                </h4>
-                <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-500">
-                  <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-xs font-medium">
-                    {news.category}
-                  </span>
-                  <div className="flex items-center space-x-3">
-                    <span className="flex items-center">
-                      <Eye size={12} className="mr-1" />
-                      {news.views || 0}
+            {topTrending.map((news, index) => {
+              // Check if this is the Magalu promo and redirect accordingly
+              const linkTo = news.title.includes('Magalu') && news.title.includes('Projetor Samsung') 
+                ? '/promo/magalu-projetor-samsung' 
+                : `/blog/${news.id}`;
+              
+              return (
+                <Link
+                  key={news.id}
+                  to={linkTo}
+                  className="group cursor-pointer pb-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0 block"
+                >
+                  <h4 className="font-semibold text-gray-900 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors mb-2 leading-snug">
+                    {news.title}
+                  </h4>
+                  <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-500">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      news.title.includes('Magalu') 
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' 
+                        : 'bg-gray-100 dark:bg-gray-700'
+                    }`}>
+                      {news.title.includes('Magalu') ? 'PROMOÇÃO' : news.category}
                     </span>
-                    <span className="flex items-center">
-                      <Clock size={12} className="mr-1" />
-                      {news.timestamp}
-                    </span>
+                    <div className="flex items-center space-x-3">
+                      <span className="flex items-center">
+                        <Eye size={12} className="mr-1" />
+                        {news.views || 0}
+                      </span>
+                      <span className="flex items-center">
+                        <Clock size={12} className="mr-1" />
+                        {news.timestamp}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         )}
         
@@ -106,25 +114,32 @@ const TrendingSidebar: React.FC = () => {
           Mais Lidas da Semana
         </h3>
         <ol className="space-y-3">
-          {mostRead.map((article, index) => (
-            <li key={article.id} className="flex items-start group cursor-pointer">
-              <span className="bg-red-600 text-white text-sm font-bold rounded-full w-7 h-7 flex items-center justify-center mr-3 mt-1 flex-shrink-0 group-hover:bg-red-700 transition-colors">
-                {index + 1}
-              </span>
-              <div className="flex-1">
-                <Link
-                  to={`/blog/${article.id}`}
-                  className="text-gray-700 dark:text-gray-300 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors font-medium leading-snug block"
-                >
-                  {article.title}
-                </Link>
-                <div className="flex items-center text-xs text-gray-500 dark:text-gray-500 mt-1">
-                  <Eye size={10} className="mr-1" />
-                  {article.views || 0} visualizações
+          {mostRead.map((article, index) => {
+            // Check if this is the Magalu promo and redirect accordingly
+            const linkTo = article.title.includes('Magalu') && article.title.includes('Projetor Samsung') 
+              ? '/promo/magalu-projetor-samsung' 
+              : `/blog/${article.id}`;
+            
+            return (
+              <li key={article.id} className="flex items-start group cursor-pointer">
+                <span className="bg-red-600 text-white text-sm font-bold rounded-full w-7 h-7 flex items-center justify-center mr-3 mt-1 flex-shrink-0 group-hover:bg-red-700 transition-colors">
+                  {index + 1}
+                </span>
+                <div className="flex-1">
+                  <Link
+                    to={linkTo}
+                    className="text-gray-700 dark:text-gray-300 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors font-medium leading-snug block"
+                  >
+                    {article.title}
+                  </Link>
+                  <div className="flex items-center text-xs text-gray-500 dark:text-gray-500 mt-1">
+                    <Eye size={10} className="mr-1" />
+                    {article.views || 0} visualizações
+                  </div>
                 </div>
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ol>
       </div>
 
@@ -139,20 +154,27 @@ const TrendingSidebar: React.FC = () => {
           <LoadingSpinner size="sm" text="Carregando..." />
         ) : (
           <div className="space-y-3">
-            {liveUpdates.map((update, index) => (
-              <Link
-                key={update.id}
-                to={`/blog/${update.id}`}
-                className="flex items-start hover:bg-red-100 dark:hover:bg-red-900/30 p-2 rounded transition-colors"
-              >
-                <span className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded mr-3 flex-shrink-0">
-                  {update.timestamp.split(' ')[1] || 'AGORA'}
-                </span>
-                <p className="text-sm text-red-800 dark:text-red-200 leading-relaxed">
-                  {update.title}
-                </p>
-              </Link>
-            ))}
+            {liveUpdates.map((update, index) => {
+              // Check if this is the Magalu promo and redirect accordingly
+              const linkTo = update.title.includes('Magalu') && update.title.includes('Projetor Samsung') 
+                ? '/promo/magalu-projetor-samsung' 
+                : `/blog/${update.id}`;
+              
+              return (
+                <Link
+                  key={update.id}
+                  to={linkTo}
+                  className="flex items-start hover:bg-red-100 dark:hover:bg-red-900/30 p-2 rounded transition-colors"
+                >
+                  <span className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded mr-3 flex-shrink-0">
+                    {update.timestamp.split(' ')[1] || 'AGORA'}
+                  </span>
+                  <p className="text-sm text-red-800 dark:text-red-200 leading-relaxed">
+                    {update.title}
+                  </p>
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
@@ -183,8 +205,6 @@ const TrendingSidebar: React.FC = () => {
           </button>
         </form>
       </div>
-
-
     </aside>
   );
 };
