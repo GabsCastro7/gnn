@@ -44,6 +44,21 @@ const Home: React.FC = () => {
       round: 1,
       easing: 'easeOutQuad'
     });
+
+    // Load Twitter widgets script
+    const script = document.createElement('script');
+    script.src = 'https://platform.twitter.com/widgets.js';
+    script.async = true;
+    script.charset = 'utf-8';
+    document.head.appendChild(script);
+
+    return () => {
+      // Cleanup script if component unmounts
+      const existingScript = document.querySelector('script[src="https://platform.twitter.com/widgets.js"]');
+      if (existingScript) {
+        document.head.removeChild(existingScript);
+      }
+    };
   }, [allNews, internationalNews]);
 
   const mainNews = allNews.find(news => news.isMain) || allNews[0];
@@ -136,11 +151,59 @@ const Home: React.FC = () => {
                   timestamp={mainNews.timestamp}
                   isMain={true}
                   id={mainNews.id}
+                  url={mainNews.url}
                 />
               </div>
             )}
 
-
+            {/* Twitter Embed Section */}
+            <div className="news-card mb-12">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 p-6">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                  <Globe className="mr-2 text-red-600 dark:text-red-500" />
+                  Últimas do Oriente Médio
+                </h2>
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                  <div className="flex items-center mb-3">
+                    <div className="w-3 h-3 bg-red-500 rounded-full mr-2 animate-pulse"></div>
+                    <span className="text-sm font-semibold text-red-600 dark:text-red-400">CONTEÚDO SENSÍVEL</span>
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">
+                    🚨 Cenas Chocantes em Gaza: Exército Israelense Incinera Família Inteira em Ataque Direto com Míssil
+                  </h3>
+                  <p className="text-gray-700 dark:text-gray-300 mb-4">
+                    O exército israelense incinerou uma família inteira em um ataque direto com míssil contra uma sala de aula 
+                    lotada de civis deslocados dentro de uma escola ontem.
+                  </p>
+                </div>
+                
+                {/* Twitter Embed */}
+                <div className="flex justify-center">
+                  <blockquote 
+                    className="twitter-tweet" 
+                    data-media-max-width="560"
+                    data-theme="light"
+                  >
+                    <p lang="en" dir="ltr">
+                      ⚠️Sensitive Content ⚠️<br/><br/>
+                      🚨Horrific scenes in Gaza : The Israeli army incinerated an entire family in a direct missile strike on a classroom packed with displaced civilians inside a school yesterday. 
+                      <a href="https://t.co/7gBcB1Gj6H">pic.twitter.com/7gBcB1Gj6H</a>
+                    </p>
+                    &mdash; Gaza Notifications (@gazanotice) 
+                    <a href="https://twitter.com/gazanotice/status/1938922253854392650?ref_src=twsrc%5Etfw">
+                      June 28, 2025
+                    </a>
+                  </blockquote>
+                </div>
+                
+                <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                    <strong>Aviso:</strong> Este conteúdo contém imagens e relatos que podem ser perturbadores. 
+                    A Global News Network compartilha esta informação para fins jornalísticos e de conscientização sobre a situação humanitária.
+                  </p>
+                </div>
+              </div>
+            </div>
 
             {/* Featured News Grid */}
             {!allLoading && !allError && featuredNews.length > 0 && (
@@ -159,14 +222,13 @@ const Home: React.FC = () => {
                         category={news.category}
                         timestamp={news.timestamp}
                         id={news.id}
+                        url={news.url}
                       />
                     </div>
                   ))}
                 </div>
               </div>
             )}
-
-
 
             {/* Latest News */}
             {!allLoading && !allError && latestNews.length > 0 && (
@@ -178,8 +240,7 @@ const Home: React.FC = () => {
                 <div className="space-y-6">
                   {latestNews.map((news, index) => (
                     <div key={news.id} className="news-card">
-
-                      <Link to={`/blog/${news.id}`} className="block group">
+                      <Link to={news.url?.startsWith('/promo/') ? news.url : `/blog/${news.id}`} className="block group">
                         <div className="flex flex-col md:flex-row gap-4 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 hover:shadow-md transition-all duration-200">
                           <img
                             src={news.imageUrl}
@@ -187,8 +248,12 @@ const Home: React.FC = () => {
                             className="w-full md:w-48 h-32 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300"
                           />
                           <div className="flex-1">
-                            <span className="inline-block bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-3 py-1 text-sm font-semibold rounded mb-2">
-                              {news.category}
+                            <span className={`inline-block px-3 py-1 text-sm font-semibold rounded mb-2 ${
+                              news.title.includes('Magalu') 
+                                ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' 
+                                : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                            }`}>
+                              {news.title.includes('Magalu') ? 'PROMOÇÃO' : news.category}
                             </span>
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
                               {news.title}
@@ -227,8 +292,6 @@ const Home: React.FC = () => {
           </div>
         </div>
       </main>
-
-
 
       {/* Live Update Indicator */}
       <div className="fixed bottom-4 right-4 z-50">
