@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { PaywallProvider } from './contexts/PaywallContext';
+import { MonetizationProvider } from './components/monetization/MonetizationManager';
 
 import CleanHeader from './components/CleanHeader';
 import Footer from './components/Footer';
@@ -44,26 +45,28 @@ function App() {
     <ThemeProvider>
       <LanguageProvider>
         <PaywallProvider>
-          <Router>
-            <div className="bg-gray-50 dark:bg-gray-900 font-inter transition-colors duration-200">
-              <Suspense fallback={<LoadingFallback />}>
-                <Routes>
-                  <Route path="/admin/*" element={<AdminDashboard />} />
-                  <Route element={<PublicLayout />}>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/blog" element={<Blog />} />
-                    <Route path="/blog/:slug" element={<BlogPost />} />
-                    <Route path="/suggest-news" element={<SuggestNews />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/contact" element={<Contact />} />
-                    <Route path="/category/:category" element={<Category />} />
-                    <Route path="/search" element={<Search />} />
-                    <Route path="/promo/magalu-projetor-samsung" element={<MagaluPromoPage />} />
-                  </Route>
-                </Routes>
-              </Suspense>
-            </div>
-          </Router>
+          <MonetizationProvider>
+            <Router>
+              <div className="bg-gray-50 dark:bg-gray-900 font-inter transition-colors duration-200">
+                <Suspense fallback={<LoadingFallback />}>
+                  <Routes>
+                    <Route path="/admin/*" element={<AdminDashboard />} />
+                    <Route element={<PublicLayout />}>
+                      <Route path="/" element={<Home />} />
+                      <Route path="/blog" element={<Blog />} />
+                      <Route path="/blog/:slug" element={<BlogPost />} />
+                      <Route path="/suggest-news" element={<SuggestNews />} />
+                      <Route path="/about" element={<About />} />
+                      <Route path="/contact" element={<Contact />} />
+                      <Route path="/category/:category" element={<Category />} />
+                      <Route path="/search" element={<Search />} />
+                      <Route path="/promo/magalu-projetor-samsung" element={<MagaluPromoPage />} />
+                    </Route>
+                  </Routes>
+                </Suspense>
+              </div>
+            </Router>
+          </MonetizationProvider>
         </PaywallProvider>
       </LanguageProvider>
     </ThemeProvider>
