@@ -36,12 +36,34 @@ class NewsService {
   private readonly API_KEY = '5abc995c804756f55fc0a6752e402aa3';
   private readonly BASE_URL = 'https://gnews.io/api/v4';
   private cache = new Map<string, { data: any; timestamp: number }>();
-  private readonly CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours cache for better performance
+  private readonly CACHE_DURATION = 30 * 60 * 1000; // 30 minutos para mais atualizações
   private lastRequestTime = 0;
-  private readonly MIN_REQUEST_INTERVAL = 3000; // 3 seconds between requests
+  private readonly MIN_REQUEST_INTERVAL = 2000; // 2 segundos entre requests
   private requestQueue: Array<() => Promise<any>> = [];
   private isProcessingQueue = false;
   private fallbackCounter = 0;
+  private usedTitles = new Set<string>(); // Para evitar duplicatas
+  private newsIdCounter = 1000; // Contador único para IDs
+
+  // Pool de imagens variadas para fallback
+  private imagePool = [
+    'https://images.pexels.com/photos/6193518/pexels-photo-6193518.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/6196984/pexels-photo-6196984.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/6802049/pexels-photo-6802049.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/9324336/pexels-photo-9324336.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/6069112/pexels-photo-6069112.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/3183150/pexels-photo-3183150.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/3184293/pexels-photo-3184293.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/3184294/pexels-photo-3184294.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/3184295/pexels-photo-3184295.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/3184296/pexels-photo-3184296.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/3184297/pexels-photo-3184297.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/3184298/pexels-photo-3184298.jpeg?auto=compress&cs=tinysrgb&w=800'
+  ];
 
   private getCacheKey(endpoint: string, params: Record<string, any>): string {
     return `${endpoint}_${JSON.stringify(params)}`;
@@ -49,6 +71,15 @@ class NewsService {
 
   private isValidCache(timestamp: number): boolean {
     return Date.now() - timestamp < this.CACHE_DURATION;
+  }
+
+  private getRandomImage(): string {
+    const randomIndex = Math.floor(Math.random() * this.imagePool.length);
+    return this.imagePool[randomIndex];
+  }
+
+  private generateUniqueId(): number {
+    return this.newsIdCounter++;
   }
 
   private async processQueue(): Promise<void> {
@@ -100,7 +131,7 @@ class NewsService {
             apikey: this.API_KEY,
             lang: 'pt',
             country: 'br',
-            max: '25', // Increased for better content variety
+            max: '50', // Aumentado para mais variedade
             ...params
           });
 
@@ -109,8 +140,7 @@ class NewsService {
           
           if (!response.ok) {
             if (response.status === 429 || response.status === 403) {
-              // Rate limited or forbidden - return enhanced fallback data
-              console.warn(`API returned ${response.status}, using fallback data`);
+              console.warn(`API returned ${response.status}, using enhanced fallback data`);
               const fallbackData = this.getEnhancedFallbackData(endpoint, params);
               this.cache.set(cacheKey, { data: fallbackData, timestamp: Date.now() });
               resolve(fallbackData);
@@ -121,13 +151,15 @@ class NewsService {
 
           const data: GNewsResponse = await response.json();
           
-          // Cache the result
-          this.cache.set(cacheKey, { data, timestamp: Date.now() });
-          resolve(data);
+          // Filter out duplicates and ensure unique content
+          const uniqueArticles = this.filterUniqueArticles(data.articles);
+          const enhancedData = { ...data, articles: uniqueArticles };
+          
+          this.cache.set(cacheKey, { data: enhancedData, timestamp: Date.now() });
+          resolve(enhancedData);
         } catch (error) {
           console.error('Error fetching news:', error);
           
-          // Return enhanced fallback data on error
           const fallbackData = this.getEnhancedFallbackData(endpoint, params);
           this.cache.set(cacheKey, { data: fallbackData, timestamp: Date.now() });
           resolve(fallbackData);
@@ -138,10 +170,25 @@ class NewsService {
     });
   }
 
+  private filterUniqueArticles(articles: GNewsArticle[]): GNewsArticle[] {
+    const uniqueArticles: GNewsArticle[] = [];
+    const seenTitles = new Set<string>();
+
+    for (const article of articles) {
+      const titleKey = article.title.toLowerCase().trim();
+      if (!seenTitles.has(titleKey) && !this.usedTitles.has(titleKey)) {
+        seenTitles.add(titleKey);
+        this.usedTitles.add(titleKey);
+        uniqueArticles.push(article);
+      }
+    }
+
+    return uniqueArticles;
+  }
+
   private async fetchInBackground(endpoint: string, params: Record<string, any>, cacheKey: string): Promise<void> {
-    // Don't fetch if we're rate limited or have very recent data
     const cached = this.cache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < 15 * 60 * 1000) { // 15 minutes
+    if (cached && Date.now() - cached.timestamp < 10 * 60 * 1000) { // 10 minutos
       return;
     }
 
@@ -150,7 +197,7 @@ class NewsService {
         apikey: this.API_KEY,
         lang: 'pt',
         country: 'br',
-        max: '25',
+        max: '50',
         ...params
       });
 
@@ -159,7 +206,9 @@ class NewsService {
       
       if (response.ok) {
         const data: GNewsResponse = await response.json();
-        this.cache.set(cacheKey, { data, timestamp: Date.now() });
+        const uniqueArticles = this.filterUniqueArticles(data.articles);
+        const enhancedData = { ...data, articles: uniqueArticles };
+        this.cache.set(cacheKey, { data: enhancedData, timestamp: Date.now() });
       }
     } catch (error) {
       console.error('Background fetch failed:', error);
@@ -172,100 +221,105 @@ class NewsService {
     const category = params.category || 'general';
     const query = params.q || '';
     
-    // Generate dynamic content based on current time and parameters
     const currentTime = new Date();
-    const timeOffset = this.fallbackCounter * 30000; // 30 seconds offset per call
+    const timeOffset = this.fallbackCounter * 45000; // 45 segundos offset
     
-    const categoryTemplates: Record<string, any[]> = {
-      world: [
-        {
-          title: "Tensões diplomáticas marcam reunião internacional de emergência",
-          description: "Líderes mundiais se reúnem para discutir questões de segurança global e cooperação internacional.",
-          content: "Em uma sessão extraordinária, representantes de diversos países abordam temas cruciais para a estabilidade mundial.",
-          image: "https://images.pexels.com/photos/6193518/pexels-photo-6193518.jpeg?auto=compress&cs=tinysrgb&w=800",
-          source: { name: "Reuters Internacional", url: "https://reuters.com" }
-        },
-        {
-          title: "Acordo comercial histórico é assinado entre blocos econômicos",
-          description: "Nova parceria promete revolucionar o comércio internacional e fortalecer economias regionais.",
-          content: "O acordo abrange múltiplos setores e estabelece novas diretrizes para cooperação econômica.",
-          image: "https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=600",
-          source: { name: "Financial Times", url: "https://ft.com" }
-        }
-      ],
-      business: [
-        {
-          title: "Mercados globais reagem a novos indicadores econômicos",
-          description: "Bolsas de valores registram movimentação significativa após divulgação de dados macroeconômicos.",
-          content: "Analistas avaliam impacto dos novos números na economia mundial e perspectivas futuras.",
-          image: "https://images.pexels.com/photos/6196984/pexels-photo-6196984.jpeg?auto=compress&cs=tinysrgb&w=600",
-          source: { name: "Bloomberg", url: "https://bloomberg.com" }
-        },
-        {
-          title: "Inovação tecnológica impulsiona crescimento do setor financeiro",
-          description: "Fintechs e bancos digitais lideram transformação no mercado financeiro global.",
-          content: "Novas tecnologias prometem democratizar acesso a serviços financeiros em escala mundial.",
-          image: "https://images.pexels.com/photos/6802049/pexels-photo-6802049.jpeg?auto=compress&cs=tinysrgb&w=600",
-          source: { name: "Wall Street Journal", url: "https://wsj.com" }
-        }
-      ],
-      technology: [
-        {
-          title: "Inteligência artificial revoluciona diagnósticos médicos",
-          description: "Nova tecnologia promete detectar doenças com precisão sem precedentes.",
-          content: "Sistemas de IA demonstram capacidade superior na identificação precoce de condições médicas.",
-          image: "https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=600",
-          source: { name: "TechCrunch", url: "https://techcrunch.com" }
-        },
-        {
-          title: "Computação quântica atinge novo marco histórico",
-          description: "Pesquisadores anunciam breakthrough que pode transformar a computação moderna.",
-          content: "Avanço representa salto significativo na capacidade de processamento de informações complexas.",
-          image: "https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=600",
-          source: { name: "MIT Technology Review", url: "https://technologyreview.com" }
-        }
-      ],
-      general: [
-        {
-          title: "Conferência climática define metas ambiciosas para próxima década",
-          description: "Países se comprometem com redução drástica de emissões e investimentos em energia limpa.",
-          content: "Acordo histórico estabelece cronograma detalhado para transição energética global.",
-          image: "https://images.pexels.com/photos/9324336/pexels-photo-9324336.jpeg?auto=compress&cs=tinysrgb&w=600",
-          source: { name: "BBC News", url: "https://bbc.com" }
-        },
-        {
-          title: "Descoberta arqueológica reescreve história antiga",
-          description: "Achados revelam nova perspectiva sobre civilizações perdidas e desenvolvimento humano.",
-          content: "Escavações trazem à luz evidências que desafiam teorias estabelecidas sobre o passado.",
-          image: "https://images.pexels.com/photos/6069112/pexels-photo-6069112.jpeg?auto=compress&cs=tinysrgb&w=600",
-          source: { name: "National Geographic", url: "https://nationalgeographic.com" }
-        }
-      ]
-    };
+    const newsTemplates = [
+      // Internacional
+      {
+        title: "Cúpula internacional define novos acordos de cooperação global",
+        description: "Líderes mundiais estabelecem diretrizes para enfrentar desafios globais emergentes.",
+        content: "Em sessão extraordinária, representantes de mais de 50 países discutem estratégias coordenadas para questões de segurança, economia e meio ambiente.",
+        category: "INTERNACIONAL"
+      },
+      {
+        title: "Tensões diplomáticas marcam reunião de emergência da ONU",
+        description: "Conselho de Segurança se reúne para abordar conflitos regionais e buscar soluções pacíficas.",
+        content: "A reunião de emergência convocada pela ONU busca mediar tensões crescentes e estabelecer um cronograma para negociações de paz.",
+        category: "INTERNACIONAL"
+      },
+      {
+        title: "Acordo comercial histórico é assinado entre blocos econômicos",
+        description: "Nova parceria promete revolucionar o comércio internacional e fortalecer economias regionais.",
+        content: "O acordo abrange múltiplos setores e estabelece novas diretrizes para cooperação econômica entre as nações participantes.",
+        category: "ECONOMIA"
+      },
+      {
+        title: "Mercados globais reagem a novos indicadores econômicos",
+        description: "Bolsas de valores registram movimentação significativa após divulgação de dados macroeconômicos.",
+        content: "Analistas avaliam impacto dos novos números na economia mundial e perspectivas para os próximos trimestres.",
+        category: "ECONOMIA"
+      },
+      {
+        title: "Inovação em inteligência artificial revoluciona diagnósticos médicos",
+        description: "Nova tecnologia promete detectar doenças com precisão sem precedentes.",
+        content: "Sistemas de IA demonstram capacidade superior na identificação precoce de condições médicas complexas.",
+        category: "TECNOLOGIA"
+      },
+      {
+        title: "Computação quântica atinge novo marco histórico",
+        description: "Pesquisadores anunciam breakthrough que pode transformar a computação moderna.",
+        content: "Avanço representa salto significativo na capacidade de processamento de informações complexas.",
+        category: "TECNOLOGIA"
+      },
+      {
+        title: "Conferência climática define metas ambiciosas para próxima década",
+        description: "Países se comprometem com redução drástica de emissões e investimentos em energia limpa.",
+        content: "Acordo histórico estabelece cronograma detalhado para transição energética global.",
+        category: "MEIO AMBIENTE"
+      },
+      {
+        title: "Descoberta arqueológica reescreve história antiga",
+        description: "Achados revelam nova perspectiva sobre civilizações perdidas e desenvolvimento humano.",
+        content: "Escavações trazem à luz evidências que desafiam teorias estabelecidas sobre o passado.",
+        category: "CIÊNCIA"
+      },
+      {
+        title: "Campeonato mundial de futebol bate recordes de audiência",
+        description: "Competição internacional atrai milhões de espectadores ao redor do mundo.",
+        content: "Evento esportivo registra números históricos de engajamento digital e presencial.",
+        category: "ESPORTES"
+      },
+      {
+        title: "Festival internacional de cinema celebra diversidade cultural",
+        description: "Evento reúne produções de mais de 80 países em celebração da arte cinematográfica.",
+        content: "Festival destaca obras que abordam temas contemporâneos e promovem diálogo intercultural.",
+        category: "CULTURA"
+      }
+    ];
 
-    const templates = categoryTemplates[category] || categoryTemplates.general;
-    const selectedTemplates = [...templates];
-    
-    // Add some variety based on search query
+    // Adicionar variações baseadas na busca
     if (query) {
-      selectedTemplates.unshift({
-        title: `Últimas atualizações sobre ${query} geram repercussão mundial`,
-        description: `Desenvolvimentos recentes relacionados a ${query} chamam atenção da comunidade internacional.`,
-        content: `Especialistas analisam impactos e desdobramentos dos eventos relacionados a ${query}.`,
-        image: "https://images.pexels.com/photos/6193518/pexels-photo-6193518.jpeg?auto=compress&cs=tinysrgb&w=800",
-        source: { name: "Global News Network", url: "https://gnn.com.br" }
+      newsTemplates.unshift({
+        title: `Últimas atualizações sobre ${query} geram repercussão internacional`,
+        description: `Desenvolvimentos recentes relacionados a ${query} chamam atenção da comunidade global.`,
+        content: `Especialistas analisam impactos e desdobramentos dos eventos relacionados a ${query} no cenário atual.`,
+        category: "GERAL"
       });
     }
 
-    const articles: GNewsArticle[] = selectedTemplates.map((template, index) => ({
-      title: template.title,
-      description: template.description,
-      content: template.content,
-      url: "#",
-      image: template.image,
-      publishedAt: new Date(currentTime.getTime() - timeOffset - (index * 60000)).toISOString(),
-      source: template.source
-    }));
+    // Embaralhar e selecionar templates únicos
+    const shuffledTemplates = newsTemplates
+      .sort(() => Math.random() - 0.5)
+      .filter(template => !this.usedTitles.has(template.title.toLowerCase()))
+      .slice(0, 25);
+
+    const articles: GNewsArticle[] = shuffledTemplates.map((template, index) => {
+      this.usedTitles.add(template.title.toLowerCase());
+      
+      return {
+        title: template.title,
+        description: template.description,
+        content: template.content,
+        url: "#",
+        image: this.getRandomImage(),
+        publishedAt: new Date(currentTime.getTime() - timeOffset - (index * 120000)).toISOString(), // 2 minutos entre cada
+        source: {
+          name: this.getRandomSource(),
+          url: "https://gnn.com.br"
+        }
+      };
+    });
 
     return {
       totalArticles: articles.length,
@@ -273,14 +327,34 @@ class NewsService {
     };
   }
 
+  private getRandomSource(): string {
+    const sources = [
+      "Reuters Internacional",
+      "BBC News",
+      "Associated Press",
+      "CNN Internacional",
+      "Financial Times",
+      "Bloomberg",
+      "Wall Street Journal",
+      "The Guardian",
+      "Le Monde",
+      "Deutsche Welle",
+      "Al Jazeera",
+      "France 24",
+      "Euronews",
+      "Global News Network"
+    ];
+    return sources[Math.floor(Math.random() * sources.length)];
+  }
+
   private convertToNewsItem(article: GNewsArticle, index: number, category: string = 'GERAL'): NewsItem {
     const timeAgo = this.getTimeAgo(article.publishedAt);
     
     return {
-      id: Date.now() + index + Math.random() * 1000,
+      id: this.generateUniqueId(),
       title: article.title,
       summary: article.description || article.content?.substring(0, 200) + '...' || '',
-      imageUrl: article.image || 'https://images.pexels.com/photos/6193518/pexels-photo-6193518.jpeg?auto=compress&cs=tinysrgb&w=800',
+      imageUrl: article.image || this.getRandomImage(),
       category: category.toUpperCase(),
       timestamp: timeAgo,
       author: article.source.name,
@@ -360,7 +434,7 @@ class NewsService {
     try {
       const response = await this.makeRequest('top-headlines', { 
         category: 'world',
-        max: '20'
+        max: '30'
       });
       
       const newsItems = response.articles.map((article, index) => 
@@ -379,15 +453,15 @@ class NewsService {
     try {
       const response = await this.makeRequest('top-headlines', { 
         category: 'general',
-        max: '5'
+        max: '10'
       });
       
-      return response.articles.slice(0, 3).map((article, index) => 
+      return response.articles.slice(0, 5).map((article, index) => 
         this.convertToNewsItem(article, index, 'URGENTE')
       );
     } catch (error) {
       console.error('Error fetching breaking news:', error);
-      return this.getFallbackNewsItems('URGENTE').slice(0, 3);
+      return this.getFallbackNewsItems('URGENTE').slice(0, 5);
     }
   }
 
@@ -396,7 +470,7 @@ class NewsService {
     try {
       const response = await this.makeRequest('top-headlines', { 
         category: 'general',
-        max: '30'
+        max: '50'
       });
       
       const apiItems = response.articles.map((article, index) => 
@@ -434,16 +508,19 @@ class NewsService {
     );
   }
 
-  // Limpar cache
+  // Limpar cache e títulos usados
   clearCache(): void {
     this.cache.clear();
+    this.usedTitles.clear();
+    this.newsIdCounter = 1000;
   }
 
   // Obter estatísticas do cache
-  getCacheStats(): { size: number; keys: string[] } {
+  getCacheStats(): { size: number; keys: string[]; uniqueTitles: number } {
     return {
       size: this.cache.size,
-      keys: Array.from(this.cache.keys())
+      keys: Array.from(this.cache.keys()),
+      uniqueTitles: this.usedTitles.size
     };
   }
 }

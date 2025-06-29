@@ -16,9 +16,14 @@ const BlogPost: React.FC = () => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [showPaywall, setShowPaywallContent] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
 
   const post = news.find(item => item.id === postId) || news[0];
   const relatedPosts = news.filter(item => item.id !== postId && item.category === post?.category).slice(0, 3);
+
+  // Check if this is the Magalu promo (should be free)
+  const isMagaluPromo = post?.id === 999999 || post?.title.includes('Magalu');
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -49,15 +54,23 @@ const BlogPost: React.FC = () => {
       easing: 'easeOutQuad'
     });
 
-    // Trigger paywall for non-subscribers after 5 seconds
-    if (!isSubscribed) {
-      const timer = setTimeout(() => {
-        setShowPaywall(true);
-      }, 5000);
+    // Scroll tracking for paywall
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const scrollPercent = (scrollTop / docHeight) * 100;
+      setScrollProgress(scrollPercent);
 
-      return () => clearTimeout(timer);
-    }
-  }, [postId, isSubscribed, setShowPaywall]);
+      // Show paywall at 50% scroll for non-subscribers (except Magalu promo)
+      if (!isSubscribed && !isMagaluPromo && scrollPercent > 50 && !showPaywall) {
+        setShowPaywallContent(true);
+        setShowPaywall(true);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [postId, isSubscribed, isMagaluPromo, showPaywall]);
 
   const handleBookmark = () => {
     setIsBookmarked(!isBookmarked);
@@ -138,8 +151,8 @@ const BlogPost: React.FC = () => {
       </div>
     `;
 
-    // Para não assinantes, mostrar apenas parte do conteúdo
-    if (!isSubscribed) {
+    // Para não assinantes, mostrar apenas metade do conteúdo (exceto Magalu)
+    if (!isSubscribed && !isMagaluPromo) {
       const previewContent = `
         <div class="article-intro">
           <p class="lead">${post.summary}</p>
@@ -150,6 +163,9 @@ const BlogPost: React.FC = () => {
           <p>${baseContent}</p>
           
           <p>Esta notícia representa um desenvolvimento significativo no cenário atual de ${post.category.toLowerCase()}. Os especialistas acompanham de perto os desdobramentos...</p>
+          
+          <h2>Análise Detalhada</h2>
+          <p>Segundo fontes especializadas, os eventos descritos nesta reportagem têm implicações que vão além do escopo imediato...</p>
         </div>
       `;
       return previewContent;
@@ -162,6 +178,14 @@ const BlogPost: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Reading Progress Bar */}
+      <div className="fixed top-0 left-0 w-full h-1 bg-gray-200 dark:bg-gray-700 z-50">
+        <div 
+          className="h-full bg-red-600 transition-all duration-300"
+          style={{ width: `${scrollProgress}%` }}
+        />
+      </div>
+
       {/* Back Button */}
       <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700">
         <div className="max-w-4xl mx-auto px-4 py-4">
@@ -178,10 +202,19 @@ const BlogPost: React.FC = () => {
       {/* Article Header */}
       <article className="max-w-4xl mx-auto px-4 py-8">
         <header className="post-header mb-8">
-          <div className="mb-4">
-            <span className="inline-block bg-red-600 text-white px-4 py-2 text-sm font-semibold rounded-full">
-              {post.category}
+          <div className="mb-4 flex items-center gap-3">
+            <span className={`inline-block px-4 py-2 text-sm font-semibold rounded-full ${
+              isMagaluPromo 
+                ? 'bg-green-600 text-white' 
+                : 'bg-red-600 dark:bg-red-700 text-white'
+            }`}>
+              {isMagaluPromo ? 'PROMOÇÃO ESPECIAL' : post.category}
             </span>
+            {!isSubscribed && !isMagaluPromo && (
+              <span className="bg-yellow-100 text-yellow-800 px-3 py-1 text-xs font-semibold rounded-full">
+                CONTEÚDO PREMIUM
+              </span>
+            )}
           </div>
           
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
@@ -191,7 +224,7 @@ const BlogPost: React.FC = () => {
           <div className="flex flex-wrap items-center gap-6 text-gray-600 dark:text-gray-400 mb-8">
             <div className="flex items-center">
               <User size={18} className="mr-2" />
-              <span>Redação Global News Network</span>
+              <span>{post.author || 'Redação Global News Network'}</span>
             </div>
             <div className="flex items-center">
               <Calendar size={18} className="mr-2" />
@@ -287,9 +320,9 @@ const BlogPost: React.FC = () => {
               }}
             />
             
-            {/* Paywall Overlay */}
-            {!isSubscribed && (
-              <div className="absolute inset-0 bg-gradient-to-t from-white via-white/80 to-transparent dark:from-gray-800 dark:via-gray-800/80 dark:to-transparent rounded-lg">
+            {/* Paywall Overlay - Only for non-subscribers and non-Magalu content */}
+            {!isSubscribed && !isMagaluPromo && showPaywall && (
+              <div className="absolute inset-0 bg-gradient-to-t from-white via-white/90 to-transparent dark:from-gray-800 dark:via-gray-800/90 dark:to-transparent rounded-lg">
                 <div className="absolute bottom-8 left-8 right-8">
                   <div className="bg-white dark:bg-gray-800 border-2 border-red-200 dark:border-red-800 rounded-xl p-6 text-center shadow-lg">
                     <div className="bg-red-100 dark:bg-red-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -299,7 +332,7 @@ const BlogPost: React.FC = () => {
                       Continue Lendo
                     </h3>
                     <p className="text-gray-600 dark:text-gray-400 mb-4">
-                      Assine para ter acesso completo a esta notícia e todo nosso conteúdo premium
+                      Você leu 50% desta notícia. Assine para ter acesso completo a todo nosso conteúdo premium
                     </p>
                     <button
                       onClick={() => setShowPaywall(true)}
@@ -308,7 +341,7 @@ const BlogPost: React.FC = () => {
                       Assinar por R$ 29,90/mês
                     </button>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                      Cancele a qualquer momento
+                      Cancele a qualquer momento • Acesso ilimitado
                     </p>
                   </div>
                 </div>
@@ -317,8 +350,8 @@ const BlogPost: React.FC = () => {
           </div>
         </div>
 
-        {/* Tags - Only show for subscribers */}
-        {isSubscribed && (
+        {/* Tags - Show for all content */}
+        {(isSubscribed || isMagaluPromo) && (
           <div className="mt-8 mb-12">
             <div className="flex items-center gap-2 mb-4">
               <Tag size={18} className="text-gray-500" />
@@ -337,8 +370,8 @@ const BlogPost: React.FC = () => {
           </div>
         )}
 
-        {/* Related Posts - Only show for subscribers */}
-        {isSubscribed && relatedPosts.length > 0 && (
+        {/* Related Posts - Show for all content */}
+        {(isSubscribed || isMagaluPromo) && relatedPosts.length > 0 && (
           <section className="mt-12">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Notícias Relacionadas</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -378,8 +411,8 @@ const BlogPost: React.FC = () => {
           </section>
         )}
 
-        {/* Subscription CTA for non-subscribers */}
-        {!isSubscribed && (
+        {/* Subscription CTA for non-subscribers (except Magalu) */}
+        {!isSubscribed && !isMagaluPromo && (
           <div className="mt-12 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl p-8 text-center">
             <h3 className="text-2xl font-bold mb-4">
               Gostou desta notícia?
